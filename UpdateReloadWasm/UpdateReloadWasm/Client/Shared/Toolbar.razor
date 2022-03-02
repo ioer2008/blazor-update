@@ -1,0 +1,58 @@
+﻿@using System.Timers;
+@inject HttpClient Http
+@inject IJSRuntime JSRuntime
+
+@if (NewVersionAvailable)
+{
+    <span>New version available.&nbsp;</span>
+    <button @onclick="Update">Update</button>
+}
+
+@code
+{
+    [CascadingParameter]
+    public CascadingAppStateProvider StateProvider { get; set; }
+
+    string Version = "";
+    bool NewVersionAvailable = false;
+    Timer VersionCheckTimer;
+
+    async Task Update()
+    {
+        await StateProvider.SaveChangesAsync();
+        await JSRuntime.InvokeVoidAsync("Update");
+    }
+
+    async Task GetVersion()
+    {
+        try
+        {
+            // try/catch because we could be offline.
+            var curVersion = await Http.GetStringAsync("GetVersion");
+            if (curVersion != Version)
+            {
+                NewVersionAvailable = true;
+                await InvokeAsync(StateHasChanged);
+            }
+        }
+        catch { }
+    }
+
+    void TimerElapsed(object sender, EventArgs e)
+    {
+        Task.Run(async () => await GetVersion());
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            // try/catch because we could be offline.
+            Version = await Http.GetStringAsync("GetVersion");
+        }
+        catch { }
+        VersionCheckTimer = new Timer(5000);
+        VersionCheckTimer.Elapsed += TimerElapsed;
+        VersionCheckTimer.Start();
+    }
+}

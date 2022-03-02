@@ -1,0 +1,19 @@
+﻿@page "/counter"
+
+<h1>Counter</h1>
+
+<p>Current count: @StateProvider.AppState.Counter</p>
+
+<button class="btn btn-primary" @onclick="IncrementCount">Click me</button>
+
+@code {
+
+    [CascadingParameter]
+    public CascadingAppStateProvider StateProvider { get; set; }
+
+    private async Task IncrementCount()
+    {
+        StateProvider.AppState.Counter++;
+        await StateProvider.SaveChangesAsync();
+    }
+}
